@@ -1,0 +1,1 @@
+obj-y := common_console.o

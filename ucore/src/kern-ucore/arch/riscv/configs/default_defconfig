@@ -1,0 +1,28 @@
+#
+# Toolchain setup
+#
+CROSS_COMPILE="riscv64-unknown-elf-"
+ADDITIONAL_CFLAGS=""
+ADDITIONAL_LDFLAGS=""
+
+#
+# Memory Management
+#
+
+#
+# Schedule
+#
+# SCHEDULER_RR is not set
+SCHEDULER_MLFQ=n
+
+#
+# Filesystem
+#
+HAVE_SFS=n
+# SFS_IMAGE_SIZE=256
+# HAVE_YAFFS2 is not set
+# HAVE_FATFS is not set
+
+#
+# Linux Device Driver Environment
+#

@@ -1,0 +1,1 @@
+obj-y := kdebug.o kmonitor.o panic.o

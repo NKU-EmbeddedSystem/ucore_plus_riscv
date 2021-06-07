@@ -1,0 +1,48 @@
+ifneq ($(MAKECMDGOALS),clean)
+include $(KCONFIG_AUTOCONFIG)
+endif
+
+ARCH_DIR 	:= $(KTREE)/arch/${ARCH}
+
+QEMU        := qemu-system-riscv64
+
+KERNEL_IMG	:= $(OBJPATH_ROOT)/kernel.img
+UCOREIMG	:= $(OBJPATH_ROOT)/ucore.img
+BOOTLOADER	:= tools/rustsbi-k210.bin
+KERNEL_ELF 	:= $(KTREE_OBJ_ROOT)/kernel-$(ARCH).elf
+LINK_FILE	:= $(ARCH_DIR)/ucore.ld
+
+# create kernel.img
+# 最终的img由bootloader和ucore内核组成
+$(KERNEL_IMG): $(UCOREIMG) $(SWAPIMG) $(SFSIMG) $(BOOTLOADER)
+	cp $(BOOTLOADER) $@
+	@dd if=$(UCOREIMG) of=$@ bs=128K seek=1
+
+# create ucore.img
+# 抛弃符号信息
+$(UCOREIMG): $(KERNEL_ELF)
+	$(TARGET_OBJCOPY) $(KERNEL_ELF) --strip-all -O binary $@
+
+# create kernel target
+# 由各个对象文件链接出内核
+$(KERNEL_ELF): $(LINK_FILE) $(KERNEL_BUILTIN) $(RAMDISK_OBJ)
+	$(Q)echo + ld $@
+	$(Q)$(TARGET_LD) $(TARGET_LDFLAGS) --gc-sections -T $(LINK_FILE) $(KERNEL_BUILTIN) $(RAMDISK_OBJ) -o $@
+	$(Q)riscv64-unknown-elf-objdump -S $@ > $(OBJPATH_ROOT)/$(basename $(notdir $@)).asm
+
+
+.PHONY: all qemu clean FORCE
+all: $(KERNEL_IMG)
+
+FORCE:
+
+qemu: $(UCOREIMG)
+	$(Q)$(QEMU) \
+		-machine virt \
+		-nographic \
+		-bios default \
+		-device loader,file=$(UCOREIMG),addr=0x80200000
+
+
+clean:
+	rm -f $(KERNEL_ELF)
